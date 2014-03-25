@@ -78,15 +78,17 @@ class PhpRenderer extends RendererAbstract
         $this->addDebugInfos($node);
 
         $content = $this->trimInlineComments($node->getContent());
+        $indent = $this->shouldIndentBeforeClose($node);
+        $break = $this->shouldBreakAfterClose($node);
 
         if (!$node->isBlock()) {
             if (preg_match('~[:;]\s*$~', $content)) {
-                $this->write(sprintf('<?php %s ?>' , $content));
+                $this->write(sprintf('<?php %s ?>' , $content), $indent, $break);
             } else {
-                $this->write(sprintf('<?php %s; ?>' , $content));
+                $this->write(sprintf('<?php %s; ?>' , $content), $indent, $break);
             }
         } else {
-            $this->write(sprintf('<?php %s { ?>' , $content));
+            $this->write(sprintf('<?php %s { ?>' , $content), $indent, $break);
         }
     }
 
@@ -96,13 +98,19 @@ class PhpRenderer extends RendererAbstract
 
         $content = $this->trimInlineComments($node->getContent());
 
-        $this->write(sprintf('<?php } %s { ?>' , $content));
+        $indent = $this->shouldIndentBeforeClose($node);
+        $break = $this->shouldBreakAfterClose($node);
+
+        $this->write(sprintf('<?php } %s { ?>' , $content), $indent, $break);
     }
 
     public function leaveTopBlock(Run $node)
     {
         if ($node->isBlock()) {
-            $this->write('<?php } ?>');
+            $indent = $this->shouldIndentBeforeClose($node);
+            $break = $this->shouldBreakAfterClose($node);
+
+            $this->write('<?php } ?>', $indent, $break);
         }
     }
 
