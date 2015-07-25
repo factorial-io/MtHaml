@@ -17,7 +17,7 @@ class Filter extends NodeAbstract
 
     public function getFilter()
     {
-        return $this->filter;
+        return trim($this->filter);
     }
 
     public function addChild(NodeAbstract $node)
@@ -38,9 +38,9 @@ class Filter extends NodeAbstract
     public function accept(NodeVisitorInterface $visitor)
     {
         if (false !== $visitor->enterFilter($this)) {
-            
+
             if (false !== $visitor->enterFilterChilds($this)) {
-                foreach($this->getChilds() as $child) {
+                foreach ($this->getChilds() as $child) {
                     $child->accept($visitor);
                 }
             }
@@ -49,4 +49,3 @@ class Filter extends NodeAbstract
         $visitor->leaveFilter($this);
     }
 }
-
