@@ -15,14 +15,29 @@ use MtHaml\Node\TagAttributeList;
 
 class TwigRenderer extends RendererAbstract
 {
-    protected function escapeLanguage($string)
+    protected function escapeLanguage($string, $context)
     {
-        return preg_replace('~(^[\{%][\{%]?|\{[\{%])~', "{{ '\\1' }}", $string);
+        // If there is a '%' or '{' at the begining of the string, it could
+        // become '{%' or '{{' when concatenated with previous output. So we
+        // need to escape '{' and '%' when appearing at the begining of the
+        // string, unless we know that previous output doesn't end with '{'.
+        $re = '~(^[{%][{%]?|\{[{%])~';
+
+        // when context is empty, consider that we don't know what's before
+        if (0 < strlen($context)) {
+            $len = strlen($context);
+            $char = $context[$len-1];
+            if ('{' !== $char) {
+                $re = '~(\{[{%])~';
+            }
+        }
+
+        return preg_replace($re, "{{ '\\1' }}", $string);
     }
 
     protected function stringLiteral($string)
     {
-        return var_export((string)$string, true);
+        return var_export((string) $string, true);
     }
 
     public function enterInterpolatedString(InterpolatedString $node)
@@ -52,7 +67,7 @@ class TwigRenderer extends RendererAbstract
             $escaping = $node->getEscaping()->isEnabled();
             if (true === $escaping) {
                 $fmt = '{{ (%s)|escape }}';
-            } else if (false === $escaping) {
+            } elseif (false === $escaping) {
                 $fmt = '{{ (%s)|raw }}';
             } else {
                 $fmt = '{{ %s }}';
@@ -204,7 +219,7 @@ class TwigRenderer extends RendererAbstract
                 $this->raw('mthaml_attribute_interpolation(');
                 $attr->getValue()->accept($this);
                 $this->raw(')');
-            } else if ($attr instanceof TagAttributeList) {
+            } elseif ($attr instanceof TagAttributeList) {
                 $this->raw('mthaml_attribute_list(');
                 $attr->getValue()->accept($this);
                 $this->raw(')');
@@ -229,8 +244,9 @@ class TwigRenderer extends RendererAbstract
         $this->raw($this->stringLiteral($this->env->getOption('format')));
         $this->raw(', ');
         $this->raw($this->stringLiteral($this->charset));
+        $this->raw( ($this->env->getOption('enable_escaper') && $this->env->getOption('escape_attrs'))?
+            '' : ', false');
 
         $this->raw(')|raw }}');
     }
 }
-
